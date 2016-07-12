@@ -9,7 +9,7 @@ public class App {
 	public static void main(String[] args) {
 		ExecutorComponent executorComponent = DaggerExecutorComponent.builder().build();
 		Executor executor = executorComponent.getExecutor();
-		ExecutorDriver driver= new MesosExecutorDriver(executor);
+		ExecutorDriver driver = new MesosExecutorDriver(executor);
 		driver.run();
 	}
 	
