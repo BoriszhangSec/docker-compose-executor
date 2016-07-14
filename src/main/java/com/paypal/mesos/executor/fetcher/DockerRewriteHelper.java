@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.ExecutorInfo;
 import org.apache.mesos.Protos.Resource;
 import org.apache.mesos.Protos.TaskInfo;
@@ -16,7 +17,7 @@ import org.apache.mesos.Protos.Value.Ranges;
 
 public class DockerRewriteHelper {
 
-	
+
 	private static final String CONTAINER_NAME = "container_name";
 	private static final String NETWORK = "network_mode";
 	private static final String LINKS = "links";
@@ -25,7 +26,7 @@ public class DockerRewriteHelper {
 	private static final String PORTS = "ports";
 	private static final String LABELS = "labels";
 	private static final String SERVICES = "services";
-	
+
 	public Map<String,Map<String,Map<String,Object>>> updateYaml(Map<String,Map<String,Map<String,Object>>> yamlMap,TaskInfo taskInfo,ExecutorInfo executorInfo){
 		if(yamlMap == null || yamlMap.isEmpty()){
 			return null;
@@ -38,10 +39,10 @@ public class DockerRewriteHelper {
 		Map<String,Map<String,Object>> services = yamlMap.get(SERVICES);
 		Map<String,Map<String,Object>> resultantServicesMap = new HashMap<String,Map<String,Object>>();
 		for(Map.Entry<String, Map<String,Object>> containerEntry:services.entrySet()){
-			
+
 			String key = containerEntry.getKey();
 			Map<String,Object> containerValue = containerEntry.getValue();
-			Map<String,Object> updatedContainerValues = updateContainerValue(executorId,taskId,containerValue,portIterator);
+			Map<String,Object> updatedContainerValues = updateContainerValue(executorId,taskInfo,containerValue,portIterator);
 			String updatedKey = prefixTaskId(taskId, key);
 			resultantServicesMap.put(updatedKey,updatedContainerValues);
 		}
@@ -50,7 +51,12 @@ public class DockerRewriteHelper {
 	}
 
 
-	private Map<String,Object> updateContainerValue(String executorId,String taskId,Map<String,Object> containerDetails,Iterator<Long> portIterator){
+	private Map<String,Object> updateContainerValue(String executorId,
+                                                    TaskInfo taskInfo,
+													Map<String,Object> containerDetails,
+													Iterator<Long> portIterator){
+
+		String taskId = taskInfo.getTaskId().getValue();
 
 		if(containerDetails.containsKey(CONTAINER_NAME)){
 			String containerValue = prefixTaskId(taskId,String.valueOf(containerDetails.get(CONTAINER_NAME)));
@@ -62,7 +68,7 @@ public class DockerRewriteHelper {
 			String networkValueString = String.valueOf(networkValue);
 			String [] split = networkValueString.split(":");
 			String containerName = split[split.length-1];
-			containerDetails.put(NETWORK, "service:"+prefixTaskId(taskId, containerName));	
+			containerDetails.put(NETWORK, "service:"+prefixTaskId(taskId, containerName));
 		}
 		System.out.println("In update container values");
 		Object linkValues = containerDetails.get(LINKS);
@@ -88,7 +94,7 @@ public class DockerRewriteHelper {
 			}
 			containerDetails.put(DEPENDS_ON, updatedLinks);
 		}
-		
+
 		Object volumesFromValues = containerDetails.get(VOLUMES_FROM);
 		if(volumesFromValues != null){
 			List<String> updatedVolumesFrom = new ArrayList<String>();
@@ -111,7 +117,7 @@ public class DockerRewriteHelper {
 			}
 			containerDetails.put(PORTS, updatedPorts);
 		}
-		
+
 		@SuppressWarnings("unchecked")
 		Map<String,String> taskIdLabel = (Map<String,String>)containerDetails.get(LABELS);
 		if(taskIdLabel == null){
@@ -119,6 +125,11 @@ public class DockerRewriteHelper {
 		}
 		taskIdLabel.put("taskId", taskId);
 		taskIdLabel.put("executorId",executorId);
+
+		for(Protos.Label label : taskInfo.getLabels().getLabelsList()) {
+			taskIdLabel.put(label.getKey(),label.getValue());
+		}
+
 		containerDetails.put(LABELS, taskIdLabel);
 		
 		return containerDetails;

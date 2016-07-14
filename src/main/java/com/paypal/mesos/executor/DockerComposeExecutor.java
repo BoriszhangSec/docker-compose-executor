@@ -61,13 +61,7 @@ public class DockerComposeExecutor implements Executor{
 	public void launchTask(ExecutorDriver executorDriver, TaskInfo taskInfo) {
 		TaskID taskId = taskInfo.getTaskId();
 		processObserver.init(this, taskId);
-
 		log.info(taskInfo.toString());
-		/*try {
-			Files.asCharSink(new File("task.INFO"), Charsets.UTF_8).write(taskInfo.toString());
-		} catch(IOException e)  {
-
-		} */
 		sendTaskStatusUpdate(executorDriver,taskId,TaskState.TASK_STARTING);
 		try {
 			File file = fileFetcher.getFile(executorInfo,taskInfo);
