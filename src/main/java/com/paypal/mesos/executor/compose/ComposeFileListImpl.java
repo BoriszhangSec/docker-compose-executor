@@ -41,7 +41,7 @@ public class ComposeFileListImpl implements ComposeFileList {
 
         Labels labels = taskInfo.getLabels();
         for (Label label : labels.getLabelsList()) {
-            if ("fileName".equals(label.getKey())) {
+            if ("org.apache.aurora.metadata.fileName".equals(label.getKey())) {
                 List<String> files = Arrays.asList(label.getValue().split(FILE_DELIMITER));
                 for (int i = 0; i < files.size(); i++)
                     files.set(i, files.get(i).trim());
